@@ -1,4 +1,10 @@
 import * as fs from 'fs-extra'
+import { promisify } from 'util'
+
+export const pathExists = promisify(fs.pathExists)
+export const writeFile = <(file: string, data: string) => void>promisify(fs.writeFile)
+export const readFile = <(file: string, format?: string) => Promise<string>>promisify(fs.readFile)
+export const mkdir = promisify(fs.mkdir)
 
 /**
  * Checks if a folder exists and creates it if necessary.
@@ -6,17 +12,17 @@ import * as fs from 'fs-extra'
  */
 export async function ensureFolder(path: string | Array<string>): Promise<void> {
   if (typeof path === 'string') {
-    if (await fs.pathExists(path)) {
+    if (await pathExists(path)) {
       return
     }
-    await fs.mkdir(path)
+    await mkdir(path)
   }
 
   if (Array.isArray(path)) {
     if (path.length === 0) {
       return
     } else if (path.length === 1) {
-      return ensureFolder(path[0])
+      return await ensureFolder(path[0])
     } else {
       await ensureFolder(path[0])
       await ensureFolder(path.slice(1))
@@ -58,12 +64,4 @@ export async function readJSON<T>(path: string): Promise<T> {
 export async function isEmptyDirectory(): Promise<boolean> {
   const files = await fs.readdir('.')
   return files.length === 0
-}
-
-/**
- * Returns th name of the Home directory in a platform-independent way.
- * @returns `USERPROFILE` or `HOME`
- */
-export function getUserHome(): string {
-  return process.env[process.platform === 'win32' ? 'USERPROFILE' : 'HOME']
 }
